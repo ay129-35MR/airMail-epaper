@@ -7,8 +7,8 @@ from flask import Flask, request
 # --------------------------------------------------
 
 # Replace these with your actual Home Assistant webhook URLs
-ENSUITE_WEBHOOK_URL = "http://your-homeassistant-url.local:8123/api/webhook/ensuite_booking"
-BEDROOM_WEBHOOK_URL = "http://your-homeassistant-url.local:8123/api/webhook/bedroom_booking"
+Room_a_WEBHOOK_URL = "http://your-homeassistant-url.local:8123/api/webhook/Room_a_booking"
+Room_b_WEBHOOK_URL = "http://your-homeassistant-url.local:8123/api/webhook/Room_b_booking"
 
 app = Flask(__name__)
 
@@ -54,11 +54,11 @@ def receive_bookings():
 
         # Adjust these keywords to match your own room names
         if "private en suite" in room_name or "private en-suite" in room_name:
-            target_url = ENSUITE_WEBHOOK_URL
-            webhook_label = "ensuite"
+            target_url = Room_a_WEBHOOK_URL
+            webhook_label = "Room_a"
         else:
-            target_url = BEDROOM_WEBHOOK_URL
-            webhook_label = "bedroom"
+            target_url = Room_b_WEBHOOK_URL
+            webhook_label = "Room_b"
         
         app.logger.info(f"Routing booking {booking.get('code', 'UNKNOWN')} to {webhook_label} webhook")
 
