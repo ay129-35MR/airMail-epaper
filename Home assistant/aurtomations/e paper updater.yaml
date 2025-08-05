@@ -1,0 +1,152 @@
+alias: Update Room A E-Paper Display
+description: "Updates an e-paper display with guest info or clears it if vacant."
+
+trigger:
+  - platform: state
+    entity_id:
+      - input_text.room_a_booking_json
+      - sensor.room_a_guest
+    for: "00:00:30"
+
+condition:
+  - condition: template
+    value_template: >-
+      {% set last_triggered = state_attr('automation.update_room_a_e_paper_display', 'last_triggered') %}
+      {{ last_triggered is none or (now() - last_triggered).total_seconds() > 10 }}
+  - condition: time
+    after: "10:30:00"
+    before: "16:30:00"
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ state_attr('sensor.room_a_guest', 'has_current_guest') == 'true' }}
+        sequence:
+          - service: open_epaper_link.drawcustom
+            target:
+              device_id: !secret epaper_device_id_room_a
+            data:
+              background: white
+              rotate: 0
+              ttl: 60
+              dither: false
+              dry-run: false
+              payload:
+                - type: rectangle
+                  x_start: 0
+                  y_start: 0
+                  x_end: 296
+                  y_end: 32
+                  fill: red
+                  outline: red
+                - type: text
+                  value: >-
+                    {{ state_attr('sensor.room_a_guest', 'guest_name') | default('GUEST') | upper }}
+                  x: 10
+                  y: 6
+                  size: 20
+                  color: white
+                - type: icon
+                  value: airplane-landing
+                  x: 10
+                  y: 40
+                  size: 16
+                  color: black
+                - type: text
+                  value: >-
+                    {{ state_attr('sensor.room_a_guest', 'checkin_date') | default('') }}
+                  x: 30
+                  y: 40
+                  size: 16
+                  color: black
+                - type: icon
+                  value: airplane-takeoff
+                  x: 10
+                  y: 60
+                  size: 16
+                  color: red
+                - type: text
+                  value: >-
+                    {{ state_attr('sensor.room_a_guest', 'checkout_date') | default('') }}
+                  x: 30
+                  y: 60
+                  size: 16
+                  color: black
+                - type: text
+                  value: "WiFi: {{ states('input_text.room_a_wifi_ssid') }}"
+                  x: 10
+                  y: 85
+                  size: 16
+                  color: black
+                - type: text
+                  value: "{{ states('input_text.room_a_wifi_password') }}"
+                  x: 10
+                  y: 105
+                  size: 14
+                  color: black
+                - type: qrcode
+                  data: >-
+                    WIFI:T:WPA;S:{{ states('input_text.room_a_wifi_ssid') }};P:{{ states('input_text.room_a_wifi_password') }};;
+                  x: 210
+                  y: 35
+                  boxsize: 2
+                  border: 1
+                  color: black
+                  bgcolor: white
+                - type: text
+                  value: >-
+                    Ref: {{ state_attr('sensor.room_a_guest', 'booking_code') | default('') }}
+                  x: 190
+                  y: 115
+                  size: 10
+                  color: black
+
+    default:
+      - service: open_epaper_link.drawcustom
+        target:
+          device_id: !secret epaper_device_id_room_a
+        data:
+          background: white
+          rotate: 0
+          ttl: 10
+          dither: false
+          dry-run: false
+          payload:
+            - type: rectangle
+              x_start: 0
+              y_start: 0
+              x_end: 296
+              y_end: 32
+              fill: red
+              outline: red
+            - type: text
+              value: Room Empty
+              x: 10
+              y: 6
+              size: 20
+              color: white
+            - type: text
+              value: "WiFi: {{ states('input_text.room_a_wifi_ssid') }}"
+              x: 10
+              y: 50
+              size: 18
+              color: black
+            - type: text
+              value: "{{ states('input_text.room_a_wifi_password') }}"
+              x: 10
+              y: 75
+              size: 16
+              color: black
+            - type: qrcode
+              data: >-
+                WIFI:T:WPA;S:{{ states('input_text.room_a_wifi_ssid') }};P:{{ states('input_text.room_a_wifi_password') }};;
+              x: 210
+              y: 35
+              boxsize: 2
+              border: 1
+              color: black
+              bgcolor: white
+
+mode: single
