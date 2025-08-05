@@ -1,0 +1,43 @@
+Overview
+This project uses an ESP32-S3 board running Open E-Paper Link (OEL) firmware to update an e-paper display with Airbnb guest booking info — all managed via Home Assistant automations and webhook-triggered updates.
+
+Hardware Requirements
+ESP32-S3 development board (with built-in BLE)
+Compatible e-paper display (e.g., Waveshare, LilyGo)
+Optional: Battery (e.g., 18650 Li-ion) for portable operation - i have this esp permanently plugged in via usb C
+
+Step 1: Flash Open E-Paper Link Firmware
+Download the latest ESP32-S3 compatible firmware from the OEL GitHub releases.
+Use esptool.py or ESPHome-Flasher to flash the firmware onto your ESP32-S3.
+On first boot, the device will create a Wi-Fi access point (OEL-Setup). Connect your PC or phone to this network.
+Navigate to http://192.168.4.1 in your browser and enter your Wi-Fi and MQTT broker credentials.
+
+Step 2: Install Open E-Paper Link Integration in Home Assistant
+Install via Home Assistant Community Store (HACS):
+If you don’t have HACS installed, follow the official guide to set it up first.
+In HACS, go to Integrations, search for Open E-Paper Link, and install it.
+Restart Home Assistant after installation.
+
+Configure Integration:
+Go to Settings > Devices & Services > Add Integration.
+Search for Open E-Paper Link and add it.
+Provide your MQTT broker information if required (often auto-configured if MQTT is already set).
+The integration will discover your ESP32-S3 device automatically if it’s connected to the same MQTT broker.
+
+Verify Device Availability:
+Once added, the e-paper display device will appear under Devices.
+You can now call services like open_epaper_link.drawcustom in automations or scripts to update your display.
+
+Step 3: Automate Updates for Battery Efficiency
+Updates to the e-paper display are on-demand only — triggered by Home Assistant automations when booking data changes.
+This avoids continuous polling, maximizing battery life and minimizing power consumption.
+
+Key settings to maximize efficiency include:
+ttl set to around 60 seconds (device sleeps quickly after update)
+dither: false to reduce processing
+dry-run: false to perform real updates only when needed
+
+Why ESP32-S3?
+Integrated BLE support for future-proof wireless options.
+Efficient power usage suitable for battery-powered e-paper setups.
+Supports all features of Open E-Paper Link firmware seamlessly.
