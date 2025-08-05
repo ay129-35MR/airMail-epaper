@@ -1,0 +1,62 @@
+alias: Airbnb Booking Handler
+description: "Handles incoming Airbnb booking webhooks and updates input_text entities."
+
+trigger:
+  - platform: webhook
+    webhook_id: bedroom_booking
+    allowed_methods:
+      - POST
+      - PUT
+    local_only: true
+
+  - platform: webhook
+    webhook_id: ensuite_booking
+    allowed_methods:
+      - POST
+      - PUT
+    local_only: true
+
+variables:
+  payload: "{{ trigger.json.bookings }}"
+  bedroom_bookings: >-
+    {{ payload
+       | selectattr('room', 'defined')
+       | selectattr('room', 'search', 'BEDROOM KEYWORD')
+       | list }}
+  ensuite_bookings: >-
+    {{ payload
+       | selectattr('room', 'defined')
+       | selectattr('room', 'search', 'ENSUITE KEYWORD')
+       | list }}
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ bedroom_bookings | length > 0 }}"
+        sequence:
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.bedroom_booking_json
+            data:
+              value: "{{ bedroom_bookings | to_json | string | replace(' ', '') }}"
+
+      - conditions:
+          - condition: template
+            value_template: "{{ ensuite_bookings | length > 0 }}"
+        sequence:
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.ensuite_booking_json
+            data:
+              value: "{{ ensuite_bookings | to_json | string | replace(' ', '') }}"
+
+  - service: persistent_notification.create
+    data:
+      title: "Airbnb Booking"
+      message: >
+        Updated bookings:
+        Bedroom: {{ bedroom_bookings | length }},
+        Ensuite: {{ ensuite_bookings | length }}
+
+mode: single
