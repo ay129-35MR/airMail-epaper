@@ -3,14 +3,14 @@ description: "Handles incoming Airbnb booking webhooks and updates input_text en
 
 trigger:
   - platform: webhook
-    webhook_id: bedroom_booking
+    webhook_id: room_a_booking
     allowed_methods:
       - POST
       - PUT
     local_only: true
 
   - platform: webhook
-    webhook_id: ensuite_booking
+    webhook_id: room_b_booking
     allowed_methods:
       - POST
       - PUT
@@ -18,45 +18,45 @@ trigger:
 
 variables:
   payload: "{{ trigger.json.bookings }}"
-  bedroom_bookings: >-
+  room_a_bookings: >-
     {{ payload
        | selectattr('room', 'defined')
-       | selectattr('room', 'search', 'BEDROOM KEYWORD')
+       | selectattr('room', 'search', 'ROOM A KEYWORD')
        | list }}
-  ensuite_bookings: >-
+  room_b_bookings: >-
     {{ payload
        | selectattr('room', 'defined')
-       | selectattr('room', 'search', 'ENSUITE KEYWORD')
+       | selectattr('room', 'search', 'ROOM B KEYWORD')
        | list }}
 
 action:
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ bedroom_bookings | length > 0 }}"
+            value_template: "{{ room_a_bookings | length > 0 }}"
         sequence:
           - service: input_text.set_value
             target:
-              entity_id: input_text.bedroom_booking_json
+              entity_id: input_text.room_a_booking_json
             data:
-              value: "{{ bedroom_bookings | to_json | string | replace(' ', '') }}"
+              value: "{{ room_a_bookings | to_json | string | replace(' ', '') }}"
 
       - conditions:
           - condition: template
-            value_template: "{{ ensuite_bookings | length > 0 }}"
+            value_template: "{{ room_b_bookings | length > 0 }}"
         sequence:
           - service: input_text.set_value
             target:
-              entity_id: input_text.ensuite_booking_json
+              entity_id: input_text.room_b_booking_json
             data:
-              value: "{{ ensuite_bookings | to_json | string | replace(' ', '') }}"
+              value: "{{ room_b_bookings | to_json | string | replace(' ', '') }}"
 
   - service: persistent_notification.create
     data:
       title: "Airbnb Booking"
       message: >
         Updated bookings:
-        Bedroom: {{ bedroom_bookings | length }},
-        Ensuite: {{ ensuite_bookings | length }}
+        room_a: {{ room_a_bookings | length }},
+        room_b: {{ room_b_bookings | length }}
 
 mode: single
