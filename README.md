@@ -22,7 +22,7 @@ This project connects Airbnb guest booking data to e-paper tags in your home.  A
    - Exposes local Flask server to the internet.
    - Used as the webhook URL for Google Apps Script.
 
-5. **Automation: Home Assistant**
+5. **Automation: Home Assistant running on Pi 4b**
    - Detects webhook changes.
    - Updates e-paper tags using:
      - `gicisky.write` (for B/W tags)
