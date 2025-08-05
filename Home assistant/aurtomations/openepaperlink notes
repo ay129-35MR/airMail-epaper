@@ -11,7 +11,9 @@ Download the latest ESP32-S3 compatible firmware from the https://install.openep
 I downloaeded the "BLE only" version as I'm going for the most minimal access point version.  
 Flash the firmware onto your ESP32-S3 - I used the excellent Web esphome tool.
 On first boot, the device will create a Wi-Fi access point (OEL-Setup). Connect your PC or phone to this network.
-Navigate to http://192.168.4.1 in your browser and enter your Wi-Fi and MQTT broker credentials.
+Navigate to http://192.168.4.1 in your browser and enter your Wi-Fi credentials to get your ESP32 S3 access point onto the network.
+make a note of the ip address assigned to your access point.
+connect back onto the normal wifi network - you should be able to access the ip address assigned to the access point and it should auto detect nearby tags.
 
 Step 2: Install Open E-Paper Link Integration in Home Assistant
 Install via Home Assistant Community Store (HACS):
@@ -22,8 +24,7 @@ Restart Home Assistant after installation.
 Configure Integration:
 Go to Settings > Devices & Services > Add Integration.
 Search for Open E-Paper Link and add it.
-Provide your MQTT broker information if required (often auto-configured if MQTT is already set).
-The integration will discover your ESP32-S3 device automatically if it’s connected to the same MQTT broker.
+The integration will discover your ESP32-S3 device automatically
 
 Verify Device Availability:
 Once added, the e-paper display device will appear under Devices.
@@ -33,7 +34,7 @@ Step 3: Automate Updates for Battery Efficiency
 Updates to the e-paper display are on-demand only — triggered by Home Assistant automations when booking data changes.
 This avoids continuous polling, maximizing battery life and minimizing power consumption.
 
-Key settings to maximize efficiency include:
+Key settings to maximize battery efficiency include:
 ttl set to around 60 seconds (device sleeps quickly after update)
 dither: false to reduce processing
 dry-run: false to perform real updates only when needed
