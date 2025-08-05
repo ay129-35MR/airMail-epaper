@@ -1,0 +1,83 @@
+import threading
+import requests
+from flask import Flask, request
+
+# --------------------------------------------------
+# Configuration
+# --------------------------------------------------
+
+# Replace these with your actual Home Assistant webhook URLs
+ENSUITE_WEBHOOK_URL = "http://your-homeassistant-url.local:8123/api/webhook/ensuite_booking"
+BEDROOM_WEBHOOK_URL = "http://your-homeassistant-url.local:8123/api/webhook/bedroom_booking"
+
+app = Flask(__name__)
+
+# --------------------------------------------------
+# Helper function to forward data to Home Assistant
+# --------------------------------------------------
+def forward_to_home_assistant(target_url, data):
+    try:
+        response = requests.post(target_url, json=data, timeout=10)
+        app.logger.info(f"Forwarded to {target_url}, status {response.status_code}")
+    except Exception as error:
+        app.logger.error(f"Error forwarding to {target_url}: {error}")
+
+# --------------------------------------------------
+# Health check endpoint
+# --------------------------------------------------
+@app.route("/", methods=["GET"])
+def index():
+    return "Airbnb E-Paper Webhook is running", 200
+
+# --------------------------------------------------
+# Webhook endpoint to receive bookings from Google Script
+# --------------------------------------------------
+@app.route("/webhook/airbnb-bookings", methods=["POST"])
+def receive_bookings():
+    app.logger.info(f"Received webhook from {request.remote_addr}")
+    
+    try:
+        payload = request.get_json(force=True)
+        app.logger.info(f"Processing {len(payload.get('bookings', []))} booking(s)")
+    except Exception as error:
+        app.logger.error(f"JSON parsing failed: {error}")
+        return "Bad Request – Invalid JSON", 400
+    
+    bookings = payload.get("bookings", [])
+    if not isinstance(bookings, list) or not bookings:
+        app.logger.warning("No valid bookings found")
+        return ("", 200)
+    
+    # Forward each booking to the correct webhook
+    for booking in bookings:
+        room_name = (booking.get("room") or "").lower()
+
+        # Adjust these keywords to match your own room names
+        if "private en suite" in room_name or "private en-suite" in room_name:
+            target_url = ENSUITE_WEBHOOK_URL
+            webhook_label = "ensuite"
+        else:
+            target_url = BEDROOM_WEBHOOK_URL
+            webhook_label = "bedroom"
+        
+        app.logger.info(f"Routing booking {booking.get('code', 'UNKNOWN')} to {webhook_label} webhook")
+
+        # Wrap booking in a list, as expected by Home Assistant
+        forward_payload = { "bookings": [booking] }
+        
+        # Fire-and-forget using threads
+        threading.Thread(
+            target=forward_to_home_assistant,
+            args=(target_url, forward_payload),
+            daemon=True
+        ).start()
+    
+    return ("", 200)
+
+# --------------------------------------------------
+# Run the app
+# --------------------------------------------------
+if __name__ == "__main__":
+    app.logger.setLevel("INFO")
+    print("Starting Flask on http://0.0.0.0:5000 …")
+    app.run(host="0.0.0.0", port=5000, threaded=True, debug=False)
