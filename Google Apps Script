@@ -1,0 +1,144 @@
+function extractAirbnbEmails() { 
+  // Search for Airbnb-related reservation emails in Gmail
+  var threads = GmailApp.search(
+    'from:automated@airbnb.com subject:"Reservation reminder" newer_than:10d in:anywhere'
+  );
+  
+  // Load stored reservation codes to avoid duplicates
+  var scriptProperties = PropertiesService.getScriptProperties();
+  var sentCodes = JSON.parse(scriptProperties.getProperty("sent_codes") || "[]");
+  
+  // TODO: Replace with your actual webhook URL
+  var FLASK_URL = "https://your-ngrok-or-tunnel-url.ngrok-free.app/your-endpoint";
+  
+  var now = new Date();
+  var allBookings = [];
+  
+  threads.forEach(function(thread) {
+    var messages = thread.getMessages();
+    messages.forEach(function(message) {
+      var body = message.getPlainBody();
+      var subject = message.getSubject().toLowerCase();
+      
+      // Filter for relevant subjects only
+      if (
+        !subject.includes("reservation reminder") &&
+        !subject.includes("reservation confirmed") &&
+        !subject.includes("upcoming reservation")
+      ) {
+        return;
+      }
+      
+      // Extract reservation code
+      var resCodeMatch = body.match(/CONFIRMATION CODE\s*([A-Z0-9]{6,10})/i);
+      var reservationCode = resCodeMatch ? resCodeMatch[1] : "Unknown";
+      
+      // Extract guest name
+      var guest = "Unknown";
+      body.split(/\r?\n/).some(function(line) {
+        var trimmedLine = line.trim();
+        
+        var m = trimmedLine.match(/^([A-ZÀ-ÿĀ-žĞİıŞŞşÇçğĺľńŕřŞşťžŽÂâĎĚěŇňŘřŚśŤťŮůŰűÝý]+(?:\s+[A-ZÀ-ÿĀ-žĞİıŞşÇçğĺľńŕřŞşťžŽÂâĎĚěŇňŘřŚśŤťŮůŰűÝý]+)*)\s+ARRIVES\s+/i);
+        
+        if (m) {
+          guest = m[1].trim();
+          return true;
+        }
+        
+        var simpleMatch = trimmedLine.match(/^(.+?)\s+ARRIVES/i);
+        if (simpleMatch) {
+          guest = simpleMatch[1].trim();
+          return true;
+        }
+        
+        return false;
+      });
+      
+      // Extract check-in and check-out dates
+      var checkIn = "Unknown";
+      var checkOut = "Unknown";
+      var lines = body.split(/\r?\n/);
+      var year = new Date().getFullYear();
+      
+      for (var i = 0; i < lines.length; i++) {
+        if (lines[i].toLowerCase().includes("check-in") && lines[i].toLowerCase().includes("checkout")) {
+          for (var j = 1; j <= 4; j++) {
+            var line = lines[i + j] || "";
+            var dateMatch = line.match(/([A-Za-z]{3,},\s?[A-Za-z]{3,}\s?\d{1,2})\s+([A-Za-z]{3,},\s?[A-Za-z]{3,}\s?\d{1,2})/);
+            if (dateMatch) {
+              checkIn = dateMatch[1].trim();
+              checkOut = dateMatch[2].trim();
+              break;
+            }
+          }
+          break;
+        }
+      }
+      
+      // Extract room/listing name
+      lines = body.split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
+      var listing = "Unknown";
+      for (var i = 2; i < lines.length; i++) {
+        if (lines[i].toLowerCase() === "room") {
+          var candidate = lines[i - 1];
+          var j = i - 2;
+          while (j >= 0 && (candidate.startsWith("http") || candidate === "")) {
+            candidate = lines[j];
+            j--;
+          }
+          listing = candidate;
+          break;
+        }
+      }
+      
+      // Construct ISO timestamp for switching logic
+      var checkInDate = new Date(checkIn + ' ' + year + ' 11:00:00');
+      var switchTime = checkInDate.toISOString();
+      
+      var payload = {
+        code: reservationCode,
+        name: guest,
+        in: checkIn,
+        out: checkOut,
+        room: listing,
+        time: switchTime
+      };
+      
+      allBookings.push(payload);
+    });
+  });
+  
+  // Helper: filter bookings for the current date and target room type
+  function enrichAndFilter(roomKeyword) {
+    return allBookings
+      .filter(b => b.room.includes(roomKeyword))
+      .map(b => {
+        var checkinTime = new Date(b.time);
+        var checkoutTime = new Date(new Date(b.out + ' ' + new Date().getFullYear() + ' 11:00:00'));
+        return { ...b, checkinTime, checkoutTime };
+      })
+      .filter(b => b.checkinTime <= now && now < b.checkoutTime)
+      .sort((a, b) => b.checkinTime - a.checkinTime)[0];
+  }
+  
+  // Example room keywords – update these to match your listing names
+  var currentDouble = enrichAndFilter('PRIVATE BEDROOM');
+  var currentEnsuite = enrichAndFilter('EN-SUITE');
+  
+  var filtered = [];
+  if (currentDouble) filtered.push(currentDouble);
+  if (currentEnsuite) filtered.push(currentEnsuite);
+  
+  Logger.log("Now: " + now.toISOString());
+  Logger.log("Matched currentDouble: " + JSON.stringify(currentDouble));
+  Logger.log("Matched currentEnsuite: " + JSON.stringify(currentEnsuite));
+  
+  // Send filtered bookings to webhook
+  if (filtered.length) {
+    UrlFetchApp.fetch(FLASK_URL, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({ bookings: filtered })
+    });
+  }
+}
