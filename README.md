@@ -1,7 +1,7 @@
 # airMail-epaper
 Automated system that parses Airbnb booking emails, extracts guest info, and displays it on e-paper tags via Home Assistant.  Ideal for short-term rental hosts who want a stylish, automated welcome display.
 
-🧠 System Overview
+### System Overview
 
 This project connects Airbnb guest booking data to e-paper tags in your home.  Airbnb API isnt available to me and I cant justify the cost of Hospitable or other such services.   I already use the excellent Rental control https://github.com/tykeal/homeassistant-rental-control integration, but that does not show guest names.  However, I use Gmail as my airbnb inbox and get emails from airbnb there, so an automated way of getting this info is helpful  I run home assistant on raspberry Pi 4B with attached SSD, and have a separate plex server on an always on Windows 11 n150 NUC.  
 
