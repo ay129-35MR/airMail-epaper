@@ -1,0 +1,68 @@
+🧰 Requirements
+Windows 10 or later
+Admin access (or ability to install software)
+Internet access
+
+✅ Step 1: Install Python (if not already installed)
+Go to: https://www.python.org/downloads/windows/
+Download the latest stable version (e.g., Python 3.12).
+Run the installer:
+✅ Check the box that says: Add Python to PATH
+Click "Install Now"
+Create 
+
+✅ Step 2: Open a Command Prompt
+Press Windows + R, type cmd, then press Enter.
+Navigate to the project folder where your flask_server.py file is stored:
+cd path\to\your\project\flask_server
+create the flask_server.py using the code at /flask server code
+
+✅ Step 3: Set Up a Virtual Environment
+python -m venv venv
+This will create a venv folder in your project directory.
+
+✅ Step 4: Activate the Virtual Environment
+venv\Scripts\activate
+You should see (venv) at the beginning of your command line prompt.
+
+✅ Step 5: Install Dependencies
+Install Flask and requests manually:
+pip install flask requests
+
+✅ Step 6: Run the Flask Server
+python flask_server.py
+Your server should start and listen on http://localhost:5000 or your chosen port.
+
+✅ Step 7: Create a .bat File to Run Server Automatically
+You can use Notepad to create a .bat (batch) file that automates steps 4–6.
+
+💡 How to Create the Batch File:
+Open Notepad
+Paste the following code into it:
+@echo off
+cd /d path\to\your\project\\flask_server
+call venv\Scripts\activate
+python flask_server.py
+pause
+
+🔁 Replace the path with the exact path to your Flask script
+Go to File → Save As
+Change Save as type to All Files
+Name the file: start_flask_server.bat
+Save it somewhere convenient (e.g., Desktop or project folder)
+
+▶️ To run it:
+Just double-click the .bat file
+A terminal window will open and start the server
+
+🧠 Optional: Run on Startup (Automatically)
+If you want this script to run every time you boot your PC:
+Press Win + R, type shell:startup, press Enter
+Copy your start_flask_server.bat into that folder
+Your Flask server will run when Windows starts.
+
+🧪 Test It
+Open your browser and go to:
+http://localhost:5000/
+You should see:
+Airbnb E-Paper Webhook is running
