@@ -7,8 +7,9 @@ Compatible e-paper display (e.g., Waveshare, LilyGo)
 Optional: Battery (e.g., 18650 Li-ion) for portable operation - i have this esp permanently plugged in via usb C
 
 Step 1: Flash Open E-Paper Link Firmware
-Download the latest ESP32-S3 compatible firmware from the OEL GitHub releases.
-Use esptool.py or ESPHome-Flasher to flash the firmware onto your ESP32-S3.
+Download the latest ESP32-S3 compatible firmware from the https://install.openepaperlink.org/  
+I downloaeded the "BLE only" version as I'm going for the most minimal access point version.  
+Flash the firmware onto your ESP32-S3 - I used the excellent Web esphome tool.
 On first boot, the device will create a Wi-Fi access point (OEL-Setup). Connect your PC or phone to this network.
 Navigate to http://192.168.4.1 in your browser and enter your Wi-Fi and MQTT broker credentials.
 
